@@ -1,102 +1,8 @@
-# # CICD using GitHub actions
-
-# name: CI/CD
-
-# # Exclude the workflow to run on changes to the helm chart
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths-ignore:
-#       - 'helm/**'
-#       - 'k8s/**'
-#       - 'README.md'
-
-# jobs:
-
-#   build:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-
-#     - name: Set up Go 1.22
-#       uses: actions/setup-go@v2
-#       with:
-#         go-version: 1.22
-
-#     - name: Build
-#       run: go build -o go-web-app
-
-#     - name: Test
-#       run: go test ./...
-  
-#   code-quality:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-
-#     - name: Run golangci-lint
-#       uses: golangci/golangci-lint-action@v6
-#       with:
-#         version: v1.56.2
-  
-#   push:
-#     runs-on: ubuntu-latest
-
-#     needs: build
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-
-#     - name: Set up Docker Buildx
-#       uses: docker/setup-buildx-action@v1
-
-#     - name: Login to DockerHub
-#       uses: docker/login-action@v3
-#       with:
-#         username: ${{ secrets.DOCKER_USERNAME }}
-#         password: ${{ secrets.DOCKER_SECRET}}
-
-#     - name: Build and Push action
-#       uses: docker/build-push-action@v6
-#       with:
-#         context: .
-#         file: ./Dockerfile
-#         push: true
-#         tags: ${{ secrets.DOCKER_USERNAME }}/go-webapp:${{github.run_id}}
-
-#   update-newtag-in-helm-chart:
-#     runs-on: ubuntu-latest
-
-#     needs: push
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-#       with:
-#         token: ${{ secrets.TOKEN }}
-
-#     - name: Update tag in Helm chart
-#       run: |
-#         sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm/go-webchart/values.yaml
-
-#     - name: Commit and push changes
-#       run: |
-#         git config --global user.email "0201it211102@gmail.com"
-#         git config --global user.name "102vansh"
-#         git add helm/go-webchart/values.yaml
-#         git commit -m "Update tag in Helm chart"
-#         git push
-
-
+# CICD using GitHub actions
 
 name: CI/CD
 
+# Exclude the workflow to run on changes to the helm chart
 on:
   push:
     branches:
@@ -115,13 +21,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.22
-      uses: actions/setup-go@v4
+    - name: Set up Go 1.22.5
+      uses: actions/setup-go@v2
       with:
-        go-version: '1.22.5'
-
-    - name: Download dependencies
-      run: go mod download
+        go-version: 1.22.5
 
     - name: Build
       run: go build -o go-web-app
@@ -129,19 +32,6 @@ jobs:
     - name: Test
       run: go test ./...
   
-#   code-quality:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-
-#     - name: Run golangci-lint
-#       uses: golangci/golangci-lint-action@v6
-#       with:
-#         version: v1.56.2
-#         args: --timeout=5m
-#         only-new-issues: true
   code-quality:
     runs-on: ubuntu-latest
 
@@ -149,19 +39,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.22.5
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.22.5'
-
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v6
       with:
         version: v1.56.2
-        args: --timeout=5m --go=1.22.5
-        only-new-issues: true
-        skip-pkg-cache: true  # Try this if cache is causing issues
-        skip-build-cache: true
+  
   push:
     runs-on: ubuntu-latest
 
@@ -178,7 +60,7 @@ jobs:
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_SECRET}}
+        password: ${{ secrets.DOCKER_SECRET }}
 
     - name: Build and Push action
       uses: docker/build-push-action@v6
@@ -186,78 +68,28 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/go-webapp:${{github.run_id}}
-
-#   update-newtag-in-helm-chart:
-#     runs-on: ubuntu-latest
-
-#     needs: push
-
-#     steps:
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
-#       with:
-#         token: ${{ secrets.TOKEN }}
-
-#     - name: Update tag in Helm chart
-#       run: |
-#         sed -i 's/tag: .*/tag: ${{github.run_id}}/' helm/go-webchart/values.yaml
-
-#     - name: Verify Helm chart
-#       run: |
-#         helm lint helm/go-webchart
-
-#     - name: Commit and push changes
-#       run: |
-#         git config --global user.email "0201it211102@gmail.com"
-#         git config --global user.name "102vansh"
-#         git pull origin main
-#         git add helm/go-webchart/values.yaml
-#         git commit -m "Update tag in Helm chart"
-#         git push "https://${{ secrets.TOKEN }}@github.com/102vansh/go-web-app.git" main
-
-#     - name: Test Helm chart
-#       run: |
-#         helm install go-webapp-test helm/go-webchart --set image.tag=${{github.run_id}}
-
-#     - name: Clean up Helm release
-#       run: |
-#         helm uninstall go-webapp-test
+        tags: ${{ secrets.DOCKER_USERNAME }}/go-web-app:${{github.run_id}}
 
   update-newtag-in-helm-chart:
     runs-on: ubuntu-latest
+
     needs: push
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.TOKEN }}
-        fetch-depth: 0  # Get all history for proper merging
 
     - name: Update tag in Helm chart
       run: |
-        sed -i 's/tag: .*/tag: ${{github.run_id}}/' helm/go-webchart/values.yaml
-
-    - name: Configure Git
-      run: |
-        git config --global user.email "0201it211102@gmail.com"
-        git config --global user.name "102vansh"
+        sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm/go-web-app-chart/values.yaml
 
     - name: Commit and push changes
       run: |
-        # Fetch latest changes
-        git fetch origin main
-        
-        # Try to rebase on top of latest changes
-        git rebase origin/main
-        
-        # Add and commit changes
+        git config --global user.email "0201it211102@gmail.com"
+        git config --global user.name "102vansh"
         git add helm/go-webchart/values.yaml
         git commit -m "Update tag in Helm chart"
-        
-        # Push with force-with-lease for safety
-        git push --force-with-lease origin main || {
-          # If push fails, try pull and push again
-          git pull --rebase origin main
-          git push origin main
-        }13s
+        git push
+
